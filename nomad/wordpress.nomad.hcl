@@ -156,8 +156,8 @@ job "cerveceria-stammtisch" {
       template {
         destination = "secrets/wordpress.env"
         env         = true
-        data        = <<EOF
-WORDPRESS_DB_HOST={{ env "NOMAD_ADDR_db" }}
+data        = <<EOF
+WORDPRESS_DB_HOST={{ with service "${var.app_name}-db" }}{{ (index . 0).Address }}:{{ (index . 0).Port }}{{ end }}
 WORDPRESS_DB_NAME=${var.db_name}
 WORDPRESS_DB_USER=${var.db_user}
 WORDPRESS_DB_PASSWORD=${var.db_password}
