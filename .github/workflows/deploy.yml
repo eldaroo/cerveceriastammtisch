@@ -121,4 +121,4 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          nomad job run -var-file=/tmp/wordpress.nomad.vars.hcl nomad/wordpress.nomad.hcl
+          nomad job run -detach -var-file=/tmp/wordpress.nomad.vars.hcl nomad/wordpress.nomad.hcl
