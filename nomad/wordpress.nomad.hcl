@@ -62,6 +62,11 @@ variable "wp_table_prefix" {
   default = "wp_"
 }
 
+variable "domain" {
+  type    = string
+  default = "cerveceriastammtisch.com.ar"
+}
+
 job "cerveceria-stammtisch" {
   datacenters = [var.datacenter]
   namespace   = var.namespace
@@ -169,6 +174,12 @@ EOF
       service {
         name = var.app_name
         port = "http"
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.${var.app_name}.rule=Host(`${var.domain}`)",
+          "traefik.http.routers.${var.app_name}.entrypoints=websecure",
+          "traefik.http.routers.${var.app_name}.tls.certresolver=le",
+        ]
 
         check {
           type     = "tcp"
