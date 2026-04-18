@@ -171,8 +171,7 @@ EOF
         port = "http"
 
         check {
-          type     = "http"
-          path     = "/"
+          type     = "tcp"
           interval = "15s"
           timeout  = "5s"
         }
