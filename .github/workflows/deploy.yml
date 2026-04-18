@@ -1,9 +1,10 @@
 name: Deploy Cerveceria Stammtisch
 
 # Required GitHub variables:
-#   NOMAD_ADDR
+#   none
 #
 # Required GitHub secrets:
+#   NOMAD_ADDR
 #   NOMAD_TOKEN
 #   CERVECERIA_DB_PASSWORD
 
@@ -24,7 +25,7 @@ jobs:
       packages: write
 
     env:
-      NOMAD_ADDR: ${{ vars.NOMAD_ADDR }}
+      NOMAD_ADDR: ${{ secrets.NOMAD_ADDR }}
       NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
       CERVECERIA_DB_PASSWORD: ${{ secrets.CERVECERIA_DB_PASSWORD }}
 
