@@ -28,15 +28,13 @@ La ruta de menor riesgo es:
 
 El archivo [wordpress.nomad.hcl](/Users/loko_/sitios/cerveceriastammtisch.com.ar/nomad/wordpress.nomad.hcl) deja ese stack listo.
 
-## 1. Crear los host volumes en el cliente de Nomad
-
-Usa como referencia [client-host-volumes.hcl.example](/Users/loko_/sitios/cerveceriastammtisch.com.ar/nomad/client-host-volumes.hcl.example).
+## 1. Crear la carpeta persistente en el nodo de Nomad
 
 En el nodo cliente, crea esta carpeta:
 
 - `/opt/nomad/data/cerveceria/db-data`
 
-Luego reinicia el cliente de Nomad para que tome los `host_volume`.
+No hace falta reiniciar Nomad para este despliegue porque el job usa un bind mount directo del Docker driver, igual que los otros servicios persistentes del cluster.
 
 ## 2. Preparar el dump para restaurar
 

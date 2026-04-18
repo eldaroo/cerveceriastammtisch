@@ -52,11 +52,6 @@ variable "wp_table_prefix" {
   default = "wp_"
 }
 
-variable "db_data_volume" {
-  type    = string
-  default = "cerveceria_db_data"
-}
-
 job "cerveceria-stammtisch" {
   datacenters = [var.datacenter]
   namespace   = var.namespace
@@ -84,18 +79,15 @@ job "cerveceria-stammtisch" {
       }
     }
 
-    volume "db_data" {
-      type      = "host"
-      source    = var.db_data_volume
-      read_only = false
-    }
-
     task "db" {
       driver = "docker"
 
       config {
         image = var.mariadb_image
         ports = ["db"]
+        volumes = [
+          "/opt/nomad/data/cerveceria/db-data:/var/lib/mysql",
+        ]
       }
 
       env {
@@ -103,12 +95,6 @@ job "cerveceria-stammtisch" {
         MARIADB_USER                 = var.db_user
         MARIADB_PASSWORD             = var.db_password
         MARIADB_RANDOM_ROOT_PASSWORD = "1"
-      }
-
-      volume_mount {
-        volume      = "db_data"
-        destination = "/var/lib/mysql"
-        read_only   = false
       }
 
       resources {

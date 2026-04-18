@@ -1,6 +1,0 @@
-client {
-  host_volume "cerveceria_db_data" {
-    path      = "/opt/nomad/data/cerveceria/db-data"
-    read_only = false
-  }
-}
