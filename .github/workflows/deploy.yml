@@ -28,6 +28,10 @@ jobs:
       NOMAD_ADDR: ${{ secrets.NOMAD_ADDR }}
       NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
       CERVECERIA_DB_PASSWORD: ${{ secrets.CERVECERIA_DB_PASSWORD }}
+      REGISTRY_USERNAME: ${{ github.actor }}
+      REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      WORDPRESS_IMAGE: ghcr.io/${{ github.repository_owner }}/cerveceriastammtisch-wordpress:${{ github.sha }}
+      MARIADB_IMAGE: ghcr.io/${{ github.repository_owner }}/cerveceriastammtisch-mariadb:${{ github.sha }}
 
     steps:
       - name: Checkout repository
@@ -38,7 +42,7 @@ jobs:
         run: |
           set -euo pipefail
           missing=()
-          for var in NOMAD_ADDR NOMAD_TOKEN CERVECERIA_DB_PASSWORD; do
+          for var in NOMAD_ADDR NOMAD_TOKEN CERVECERIA_DB_PASSWORD REGISTRY_USERNAME REGISTRY_PASSWORD; do
             if [ -z "${!var:-}" ]; then
               missing+=("$var")
             fi
@@ -106,6 +110,8 @@ jobs:
               return json.dumps(value)
 
           lines = [
+              f'registry_username = {hcl_string(os.environ["REGISTRY_USERNAME"])}',
+              f'registry_password = {hcl_string(os.environ["REGISTRY_PASSWORD"])}',
               f'wordpress_image = {hcl_string(os.environ["WORDPRESS_IMAGE"])}',
               f'mariadb_image   = {hcl_string(os.environ["MARIADB_IMAGE"])}',
               f'db_password     = {hcl_string(os.environ["CERVECERIA_DB_PASSWORD"])}',
@@ -113,9 +119,6 @@ jobs:
 
           Path("/tmp/wordpress.nomad.vars.hcl").write_text("\n".join(lines) + "\n", encoding="utf-8")
           PY
-        env:
-          WORDPRESS_IMAGE: ghcr.io/${{ github.repository_owner }}/cerveceriastammtisch-wordpress:${{ github.sha }}
-          MARIADB_IMAGE: ghcr.io/${{ github.repository_owner }}/cerveceriastammtisch-mariadb:${{ github.sha }}
 
       - name: Deploy Nomad job
         shell: bash

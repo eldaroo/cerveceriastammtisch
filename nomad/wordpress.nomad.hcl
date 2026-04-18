@@ -23,6 +23,16 @@ variable "mariadb_image" {
   default = "ghcr.io/eldaroo/cerveceriastammtisch-mariadb:latest"
 }
 
+variable "registry_username" {
+  type    = string
+  default = ""
+}
+
+variable "registry_password" {
+  type    = string
+  default = ""
+}
+
 variable "db_name" {
   type    = string
   default = "cerveceria"
@@ -84,6 +94,10 @@ job "cerveceria-stammtisch" {
 
       config {
         image = var.mariadb_image
+        auth {
+          username = var.registry_username
+          password = var.registry_password
+        }
         ports = ["db"]
         mount {
           type   = "volume"
@@ -127,6 +141,10 @@ job "cerveceria-stammtisch" {
 
       config {
         image = var.wordpress_image
+        auth {
+          username = var.registry_username
+          password = var.registry_password
+        }
         ports = ["http"]
       }
 
