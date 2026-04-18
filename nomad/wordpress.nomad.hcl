@@ -34,8 +34,7 @@ variable "db_user" {
 }
 
 variable "db_password" {
-  type      = string
-  sensitive = true
+  type = string
 }
 
 variable "wp_home" {
