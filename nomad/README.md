@@ -13,6 +13,7 @@ Este proyecto ya contiene todo lo necesario para migrar el sitio sin recrearlo a
 - Tema detectado: `astra`
 - Plugins relevantes presentes: `updraftplus`, `ultimate-addons-for-gutenberg`, `eps-301-redirects`, `qr-redirector`
 - El dump fue exportado desde MariaDB 11.1.2 y es compatible con MariaDB/MySQL, no con PostgreSQL
+- WordPress y MariaDB corren en el mismo allocation de Nomad, asi que la conexion entre ambos usa `127.0.0.1:${NOMAD_PORT_db}` dentro del namespace compartido del grupo `bridge`
 
 ## Estrategia recomendada
 
@@ -54,6 +55,7 @@ Campos importantes:
 - `wordpress_image` y `mariadb_image`: normalmente apuntan a GHCR y en deploy los rellena GitHub Actions.
 - El dump ya trae `home` y `siteurl` con `https://cerveceriastammtisch.com.ar`, asi que no hace falta inyectarlos por `WORDPRESS_CONFIG_EXTRA`.
 - El `wp-config-docker.php` oficial ya maneja `HTTP_X_FORWARDED_PROTO`, por eso no hace falta agregar ese bloque manualmente.
+- No uses `service()` para construir `WORDPRESS_DB_HOST` en este job: esa funcion consulta Consul, mientras que este stack solo necesita la red compartida del allocation.
 
 ## 4. Desplegar
 
