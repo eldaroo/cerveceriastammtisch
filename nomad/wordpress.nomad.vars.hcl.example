@@ -10,5 +10,3 @@ db_password = "cambiar-esto-por-un-secreto-largo"
 
 db_name = "cerveceria"
 db_user = "cerveceria_wp"
-wp_home = "https://cerveceriastammtisch.com.ar"
-wp_siteurl = "https://cerveceriastammtisch.com.ar"

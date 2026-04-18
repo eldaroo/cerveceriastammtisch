@@ -47,16 +47,6 @@ variable "db_password" {
   type = string
 }
 
-variable "wp_home" {
-  type    = string
-  default = "https://cerveceriastammtisch.com.ar"
-}
-
-variable "wp_siteurl" {
-  type    = string
-  default = "https://cerveceriastammtisch.com.ar"
-}
-
 variable "wp_table_prefix" {
   type    = string
   default = "wp_"
@@ -162,7 +152,6 @@ WORDPRESS_DB_NAME=${var.db_name}
 WORDPRESS_DB_USER=${var.db_user}
 WORDPRESS_DB_PASSWORD=${var.db_password}
 WORDPRESS_TABLE_PREFIX=${var.wp_table_prefix}
-WORDPRESS_CONFIG_EXTRA=define( 'WP_HOME', '${var.wp_home}' ); define( 'WP_SITEURL', '${var.wp_siteurl}' ); if ( isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) { $_SERVER['HTTPS'] = 'on'; }
 EOF
       }
 

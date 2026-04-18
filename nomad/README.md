@@ -52,7 +52,8 @@ Campos importantes:
 
 - `db_password`: usa una clave nueva. No reutilices la del `wp-config.php` actual.
 - `wordpress_image` y `mariadb_image`: normalmente apuntan a GHCR y en deploy los rellena GitHub Actions.
-- `wp_home` y `wp_siteurl`: deja el dominio final que va a publicar Nomad.
+- El dump ya trae `home` y `siteurl` con `https://cerveceriastammtisch.com.ar`, asi que no hace falta inyectarlos por `WORDPRESS_CONFIG_EXTRA`.
+- El `wp-config-docker.php` oficial ya maneja `HTTP_X_FORWARDED_PROTO`, por eso no hace falta agregar ese bloque manualmente.
 
 ## 4. Desplegar
 
