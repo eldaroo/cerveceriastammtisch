@@ -147,11 +147,11 @@ job "cerveceria-stammtisch" {
         destination = "secrets/wordpress.env"
         env         = true
 data        = <<EOF
-WORDPRESS_DB_HOST=127.0.0.1:{{ env "NOMAD_PORT_db" }}
-WORDPRESS_DB_NAME=${var.db_name}
-WORDPRESS_DB_USER=${var.db_user}
-WORDPRESS_DB_PASSWORD=${var.db_password}
-WORDPRESS_TABLE_PREFIX=${var.wp_table_prefix}
+WORDPRESS_DB_HOST={{ printf "127.0.0.1:%s" (env "NOMAD_PORT_db") | toJSON }}
+WORDPRESS_DB_NAME=${jsonencode(var.db_name)}
+WORDPRESS_DB_USER=${jsonencode(var.db_user)}
+WORDPRESS_DB_PASSWORD=${jsonencode(var.db_password)}
+WORDPRESS_TABLE_PREFIX=${jsonencode(var.wp_table_prefix)}
 EOF
       }
 
