@@ -1,6 +1,6 @@
 client {
   host_volume "cerveceria_db_data" {
-    path      = "/srv/nomad/cerveceria/db-data"
+    path      = "/opt/nomad/data/cerveceria/db-data"
     read_only = false
   }
 }

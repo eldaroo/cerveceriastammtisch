@@ -34,7 +34,7 @@ Usa como referencia [client-host-volumes.hcl.example](/Users/loko_/sitios/cervec
 
 En el nodo cliente, crea esta carpeta:
 
-- `/srv/nomad/cerveceria/db-data`
+- `/opt/nomad/data/cerveceria/db-data`
 
 Luego reinicia el cliente de Nomad para que tome los `host_volume`.
 
