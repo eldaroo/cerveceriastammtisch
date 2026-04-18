@@ -55,6 +55,7 @@ Campos importantes:
 - `wordpress_image` y `mariadb_image`: normalmente apuntan a GHCR y en deploy los rellena GitHub Actions.
 - El dump ya trae `home` y `siteurl` con `https://cerveceriastammtisch.com.ar`, asi que no hace falta inyectarlos por `WORDPRESS_CONFIG_EXTRA`.
 - El `wp-config-docker.php` oficial ya maneja `HTTP_X_FORWARDED_PROTO`, por eso no hace falta agregar ese bloque manualmente.
+- La plantilla de WordPress serializa los valores de base de datos con `jsonencode` para que el password llegue intacto aunque el secreto tenga caracteres especiales.
 - No uses `service()` para construir `WORDPRESS_DB_HOST` en este job: esa funcion consulta Consul, mientras que este stack solo necesita la red compartida del allocation.
 
 ## 4. Desplegar
