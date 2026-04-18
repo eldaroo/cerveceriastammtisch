@@ -85,9 +85,17 @@ job "cerveceria-stammtisch" {
       config {
         image = var.mariadb_image
         ports = ["db"]
-        volumes = [
-          "/opt/nomad/data/cerveceria/db-data:/var/lib/mysql",
-        ]
+        mount {
+          type   = "volume"
+          target = "/var/lib/mysql"
+          source = "cerveceria_db_data"
+
+          volume_options {
+            driver_config {
+              name = "local"
+            }
+          }
+        }
       }
 
       env {

@@ -30,11 +30,7 @@ El archivo [wordpress.nomad.hcl](/Users/loko_/sitios/cerveceriastammtisch.com.ar
 
 ## 1. Crear la carpeta persistente en el nodo de Nomad
 
-En el nodo cliente, crea esta carpeta:
-
-- `/opt/nomad/data/cerveceria/db-data`
-
-No hace falta reiniciar Nomad para este despliegue porque el job usa un bind mount directo del Docker driver, igual que los otros servicios persistentes del cluster.
+No hace falta preparar carpetas manualmente en el VPS: el job usa un volumen Docker nombrado para MariaDB y Docker lo crea en el primer arranque.
 
 ## 2. Preparar el dump para restaurar
 
