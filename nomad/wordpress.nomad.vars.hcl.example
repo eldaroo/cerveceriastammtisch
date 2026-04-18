@@ -3,15 +3,12 @@ namespace  = "default"
 
 app_name = "cerveceria-stammtisch"
 
-db_name     = "cerveceria"
-db_user     = "cerveceria_wp"
+wordpress_image = "ghcr.io/eldaroo/cerveceriastammtisch-wordpress:latest"
+mariadb_image   = "ghcr.io/eldaroo/cerveceriastammtisch-mariadb:latest"
+
 db_password = "cambiar-esto-por-un-secreto-largo"
 
-wp_home    = "https://cerveceriastammtisch.com.ar"
+db_name = "cerveceria"
+db_user = "cerveceria_wp"
+wp_home = "https://cerveceriastammtisch.com.ar"
 wp_siteurl = "https://cerveceriastammtisch.com.ar"
-
-wp_table_prefix = "wp_"
-
-wp_content_volume = "cerveceria_wp_content"
-db_data_volume    = "cerveceria_db_data"
-db_init_volume    = "cerveceria_db_init"

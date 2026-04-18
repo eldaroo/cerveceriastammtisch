@@ -15,20 +15,22 @@ variable "app_name" {
 
 variable "wordpress_image" {
   type    = string
-  default = "wordpress:php8.2-apache"
+  default = "ghcr.io/eldaroo/cerveceriastammtisch-wordpress:latest"
 }
 
 variable "mariadb_image" {
   type    = string
-  default = "mariadb:10.11"
+  default = "ghcr.io/eldaroo/cerveceriastammtisch-mariadb:latest"
 }
 
 variable "db_name" {
-  type = string
+  type    = string
+  default = "cerveceria"
 }
 
 variable "db_user" {
-  type = string
+  type    = string
+  default = "cerveceria_wp"
 }
 
 variable "db_password" {
@@ -37,11 +39,13 @@ variable "db_password" {
 }
 
 variable "wp_home" {
-  type = string
+  type    = string
+  default = "https://cerveceriastammtisch.com.ar"
 }
 
 variable "wp_siteurl" {
-  type = string
+  type    = string
+  default = "https://cerveceriastammtisch.com.ar"
 }
 
 variable "wp_table_prefix" {
@@ -49,19 +53,9 @@ variable "wp_table_prefix" {
   default = "wp_"
 }
 
-variable "wp_content_volume" {
-  type    = string
-  default = "cerveceria_wp_content"
-}
-
 variable "db_data_volume" {
   type    = string
   default = "cerveceria_db_data"
-}
-
-variable "db_init_volume" {
-  type    = string
-  default = "cerveceria_db_init"
 }
 
 job "cerveceria-stammtisch" {
@@ -91,22 +85,10 @@ job "cerveceria-stammtisch" {
       }
     }
 
-    volume "wp_content" {
-      type      = "host"
-      source    = var.wp_content_volume
-      read_only = false
-    }
-
     volume "db_data" {
       type      = "host"
       source    = var.db_data_volume
       read_only = false
-    }
-
-    volume "db_init" {
-      type      = "host"
-      source    = var.db_init_volume
-      read_only = true
     }
 
     task "db" {
@@ -128,12 +110,6 @@ job "cerveceria-stammtisch" {
         volume      = "db_data"
         destination = "/var/lib/mysql"
         read_only   = false
-      }
-
-      volume_mount {
-        volume      = "db_init"
-        destination = "/docker-entrypoint-initdb.d"
-        read_only   = true
       }
 
       resources {
@@ -172,12 +148,6 @@ WORDPRESS_DB_PASSWORD=${var.db_password}
 WORDPRESS_TABLE_PREFIX=${var.wp_table_prefix}
 WORDPRESS_CONFIG_EXTRA=define( 'WP_HOME', '${var.wp_home}' ); define( 'WP_SITEURL', '${var.wp_siteurl}' ); if ( isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) { $_SERVER['HTTPS'] = 'on'; }
 EOF
-      }
-
-      volume_mount {
-        volume      = "wp_content"
-        destination = "/var/www/html/wp-content"
-        read_only   = false
       }
 
       resources {

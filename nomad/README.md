@@ -3,8 +3,9 @@
 Este proyecto ya contiene todo lo necesario para migrar el sitio sin recrearlo a mano:
 
 - Un WordPress completo en `public/`
-- El contenido del sitio en `public/wp-content`
 - Un dump de base de datos valido en `cerveceria.sql`
+- Un Dockerfile para publicar el WordPress en GHCR
+- Un Dockerfile para publicar el restore de MariaDB en GHCR
 
 ## Lo que ya pude confirmar
 
@@ -19,10 +20,11 @@ No conviene reconstruir este sitio desde cero si ya tenemos el dump bueno.
 
 La ruta de menor riesgo es:
 
-1. Levantar `wordpress + mariadb` en Nomad.
-2. Sembrar el volumen `wp-content` con el contenido actual de `public/wp-content`.
-3. Importar `cerveceria.sql` una sola vez al crear la base.
-4. Publicar el servicio detras de tu proxy o ingress.
+1. Construir una imagen custom de WordPress desde `public/`.
+2. Construir una imagen custom de MariaDB con el restore SQL dentro de `/docker-entrypoint-initdb.d/`.
+3. Publicar ambas imagenes en GHCR desde GitHub Actions.
+4. Levantar `wordpress + mariadb` en Nomad apuntando a esas imagenes.
+5. Publicar el servicio detras de tu proxy o ingress.
 
 El archivo [wordpress.nomad.hcl](/Users/loko_/sitios/cerveceriastammtisch.com.ar/nomad/wordpress.nomad.hcl) deja ese stack listo.
 
@@ -30,17 +32,13 @@ El archivo [wordpress.nomad.hcl](/Users/loko_/sitios/cerveceriastammtisch.com.ar
 
 Usa como referencia [client-host-volumes.hcl.example](/Users/loko_/sitios/cerveceriastammtisch.com.ar/nomad/client-host-volumes.hcl.example).
 
-En el nodo cliente, crea estas carpetas:
+En el nodo cliente, crea esta carpeta:
 
-- `/srv/nomad/cerveceria/wp-content`
 - `/srv/nomad/cerveceria/db-data`
-- `/srv/nomad/cerveceria/db-init`
 
 Luego reinicia el cliente de Nomad para que tome los `host_volume`.
 
-## 2. Preparar el contenido para restaurar
-
-Prepara el dump para el init de MariaDB:
+## 2. Preparar el dump para restaurar
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\nomad\scripts\extract-db-dump.ps1
@@ -50,15 +48,7 @@ Eso genera:
 
 - `nomad/dist/db-init/01-restore.sql`
 
-Ahora copia dos cosas al nodo de Nomad:
-
-1. Todo el contenido de `public/wp-content/` a `/srv/nomad/cerveceria/wp-content/`
-2. El archivo `nomad/dist/db-init/01-restore.sql` a `/srv/nomad/cerveceria/db-init/01-restore.sql`
-
-Notas:
-
-- `db-init` solo se usa en el primer arranque. MariaDB ejecuta esos scripts solo si `/var/lib/mysql` esta vacio.
-- Si ya inicializaste la base una vez, borra el contenido de `db-data` antes de repetir la restauracion.
+Ese archivo se copia dentro de la imagen custom de MariaDB, asi que ya no hace falta subirlo manualmente al host.
 
 ## 3. Ajustar variables del job
 
@@ -67,8 +57,8 @@ Copia [wordpress.nomad.vars.hcl.example](/Users/loko_/sitios/cerveceriastammtisc
 Campos importantes:
 
 - `db_password`: usa una clave nueva. No reutilices la del `wp-config.php` actual.
+- `wordpress_image` y `mariadb_image`: normalmente apuntan a GHCR y en deploy los rellena GitHub Actions.
 - `wp_home` y `wp_siteurl`: deja el dominio final que va a publicar Nomad.
-- Si vas a publicar primero en una URL temporal, usa esa URL y luego corrige `home` y `siteurl` dentro de WordPress cuando pases al dominio final.
 
 ## 4. Desplegar
 
@@ -94,20 +84,9 @@ Despues del primer arranque, valida:
 3. Que el admin de WordPress abra.
 4. Que los enlaces permanentes funcionen.
 
-## Fallback con UpdraftPlus
-
-Si prefieres restaurar desde plugin en vez de sembrar `wp-content` manualmente:
-
-1. Despliega el job vacio.
-2. Instala `UpdraftPlus`.
-3. Copia los archivos de `public/wp-content/updraft/` al directorio `wp-content/updraft` del volumen.
-4. Restaura desde el panel de WordPress.
-
-Funciona, pero es mas lento y agrega pasos manuales. Para este caso, sembrar `wp-content` e importar SQL es mas directo.
-
 ## Riesgos a tener en cuenta
 
-- El `wp-config.php` actual contiene credenciales viejas. No deberian reutilizarse.
+- El `wp-config.php` actual no se publica dentro de la imagen.
 - Si el dominio cambia, hay que actualizar `home`, `siteurl` y revisar contenido serializado si aparecen URLs absolutas antiguas.
 - WordPress sigue requiriendo MariaDB/MySQL; el PostgreSQL que ya existe en Nomad no sirve para este sitio sin una capa de compatibilidad que no recomiendo.
 - Si tu cluster usa Traefik, Caddy o Nginx, faltaria agregar etiquetas o configuracion especifica del proxy. Este job queda intencionalmente generico.

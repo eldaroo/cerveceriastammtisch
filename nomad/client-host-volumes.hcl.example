@@ -1,16 +1,6 @@
 client {
-  host_volume "cerveceria_wp_content" {
-    path      = "/srv/nomad/cerveceria/wp-content"
-    read_only = false
-  }
-
   host_volume "cerveceria_db_data" {
     path      = "/srv/nomad/cerveceria/db-data"
     read_only = false
-  }
-
-  host_volume "cerveceria_db_init" {
-    path      = "/srv/nomad/cerveceria/db-init"
-    read_only = true
   }
 }

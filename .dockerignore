@@ -1,0 +1,11 @@
+**
+!Dockerfile
+!nomad/
+!nomad/mariadb.Dockerfile
+!nomad/dist/
+!nomad/dist/db-init/
+!nomad/dist/db-init/**
+!public/
+!public/**
+public/wp-config.php
+public/wp-content/updraft/**

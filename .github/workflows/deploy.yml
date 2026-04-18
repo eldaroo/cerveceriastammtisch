@@ -2,19 +2,9 @@ name: Deploy Cerveceria Stammtisch
 
 # Required GitHub variables:
 #   NOMAD_ADDR
-#   DEPLOY_SSH_HOST
-#   DEPLOY_SSH_USER
-#   DEPLOY_SSH_PORT (optional, defaults to 22)
-#   DEPLOY_HOST_DATA_DIR (optional, defaults to /srv/nomad/cerveceria)
-#   NOMAD_DATACENTER (optional, defaults to dc1)
-#   NOMAD_NAMESPACE (optional, defaults to default)
-#   CERVECERIA_DB_NAME (optional, defaults to cerveceria)
-#   CERVECERIA_DB_USER (optional, defaults to cerveceria_wp)
-#   CERVECERIA_SITE_URL (optional, defaults to https://cerveceriastammtisch.com.ar)
 #
 # Required GitHub secrets:
 #   NOMAD_TOKEN
-#   DEPLOY_SSH_KEY
 #   CERVECERIA_DB_PASSWORD
 
 on:
@@ -29,19 +19,13 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     env:
       NOMAD_ADDR: ${{ vars.NOMAD_ADDR }}
       NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
-      DEPLOY_SSH_HOST: ${{ vars.DEPLOY_SSH_HOST }}
-      DEPLOY_SSH_USER: ${{ vars.DEPLOY_SSH_USER }}
-      DEPLOY_SSH_PORT: ${{ vars.DEPLOY_SSH_PORT }}
-      DEPLOY_HOST_DATA_DIR: ${{ vars.DEPLOY_HOST_DATA_DIR }}
-      NOMAD_DATACENTER: ${{ vars.NOMAD_DATACENTER }}
-      NOMAD_NAMESPACE: ${{ vars.NOMAD_NAMESPACE }}
-      CERVECERIA_DB_NAME: ${{ vars.CERVECERIA_DB_NAME }}
-      CERVECERIA_DB_USER: ${{ vars.CERVECERIA_DB_USER }}
-      CERVECERIA_SITE_URL: ${{ vars.CERVECERIA_SITE_URL }}
       CERVECERIA_DB_PASSWORD: ${{ secrets.CERVECERIA_DB_PASSWORD }}
 
     steps:
@@ -53,7 +37,7 @@ jobs:
         run: |
           set -euo pipefail
           missing=()
-          for var in NOMAD_ADDR DEPLOY_SSH_HOST DEPLOY_SSH_USER NOMAD_TOKEN CERVECERIA_DB_PASSWORD; do
+          for var in NOMAD_ADDR NOMAD_TOKEN CERVECERIA_DB_PASSWORD; do
             if [ -z "${!var:-}" ]; then
               missing+=("$var")
             fi
@@ -69,39 +53,50 @@ jobs:
         run: |
           .\nomad\scripts\extract-db-dump.ps1 -SourcePath .\cerveceria.sql -OutputSql .\nomad\dist\db-init\01-restore.sql
 
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push WordPress image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/cerveceriastammtisch-wordpress:latest
+            ghcr.io/${{ github.repository_owner }}/cerveceriastammtisch-wordpress:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push MariaDB image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: nomad/mariadb.Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/cerveceriastammtisch-mariadb:latest
+            ghcr.io/${{ github.repository_owner }}/cerveceriastammtisch-mariadb:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Setup Nomad
         uses: hashicorp/setup-nomad@main
         with:
           version: "1.7.6"
 
-      - name: Configure SSH
-        shell: bash
-        run: |
-          set -euo pipefail
-          install -d -m 700 ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p "${DEPLOY_SSH_PORT:-22}" -H "$DEPLOY_SSH_HOST" >> ~/.ssh/known_hosts
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-
-      - name: Sync WordPress content to host volumes
-        shell: bash
-        run: |
-          set -euo pipefail
-          SSH_PORT="${DEPLOY_SSH_PORT:-22}"
-          HOST_DIR="${DEPLOY_HOST_DATA_DIR:-/srv/nomad/cerveceria}"
-          SSH_TARGET="${DEPLOY_SSH_USER}@${DEPLOY_SSH_HOST}"
-
-          ssh -p "$SSH_PORT" "$SSH_TARGET" "mkdir -p '$HOST_DIR/wp-content' '$HOST_DIR/db-init'"
-          rsync -az --delete --exclude 'updraft/' -e "ssh -p $SSH_PORT" public/wp-content/ "$SSH_TARGET:$HOST_DIR/wp-content/"
-          rsync -az -e "ssh -p $SSH_PORT" nomad/dist/db-init/01-restore.sql "$SSH_TARGET:$HOST_DIR/db-init/01-restore.sql"
-
       - name: Build Nomad vars file
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
+          python3 - <<'PY'
           import json
           import os
           from pathlib import Path
@@ -109,44 +104,17 @@ jobs:
           def hcl_string(value: str) -> str:
               return json.dumps(value)
 
-          values = {
-              "datacenter": os.environ.get("NOMAD_DATACENTER") or "dc1",
-              "namespace": os.environ.get("NOMAD_NAMESPACE") or "default",
-              "app_name": "cerveceria-stammtisch",
-              "db_name": os.environ.get("CERVECERIA_DB_NAME") or "cerveceria",
-              "db_user": os.environ.get("CERVECERIA_DB_USER") or "cerveceria_wp",
-              "db_password": os.environ["CERVECERIA_DB_PASSWORD"],
-              "wp_home": os.environ.get("CERVECERIA_SITE_URL") or "https://cerveceriastammtisch.com.ar",
-              "wp_siteurl": os.environ.get("CERVECERIA_SITE_URL") or "https://cerveceriastammtisch.com.ar",
-              "wp_table_prefix": "wp_",
-              "wp_content_volume": "cerveceria_wp_content",
-              "db_data_volume": "cerveceria_db_data",
-              "db_init_volume": "cerveceria_db_init",
-          }
-
           lines = [
-              f'datacenter = {hcl_string(values["datacenter"])}',
-              f'namespace  = {hcl_string(values["namespace"])}',
-              "",
-              f'app_name = {hcl_string(values["app_name"])}',
-              "",
-              f'db_name     = {hcl_string(values["db_name"])}',
-              f'db_user     = {hcl_string(values["db_user"])}',
-              f'db_password = {hcl_string(values["db_password"])}',
-              "",
-              f'wp_home    = {hcl_string(values["wp_home"])}',
-              f'wp_siteurl = {hcl_string(values["wp_siteurl"])}',
-              "",
-              f'wp_table_prefix = {hcl_string(values["wp_table_prefix"])}',
-              "",
-              f'wp_content_volume = {hcl_string(values["wp_content_volume"])}',
-              f'db_data_volume    = {hcl_string(values["db_data_volume"])}',
-              f'db_init_volume    = {hcl_string(values["db_init_volume"])}',
-              "",
+              f'wordpress_image = {hcl_string(os.environ["WORDPRESS_IMAGE"])}',
+              f'mariadb_image   = {hcl_string(os.environ["MARIADB_IMAGE"])}',
+              f'db_password     = {hcl_string(os.environ["CERVECERIA_DB_PASSWORD"])}',
           ]
 
-          Path("/tmp/wordpress.nomad.vars.hcl").write_text("\n".join(lines), encoding="utf-8")
+          Path("/tmp/wordpress.nomad.vars.hcl").write_text("\n".join(lines) + "\n", encoding="utf-8")
           PY
+        env:
+          WORDPRESS_IMAGE: ghcr.io/${{ github.repository_owner }}/cerveceriastammtisch-wordpress:${{ github.sha }}
+          MARIADB_IMAGE: ghcr.io/${{ github.repository_owner }}/cerveceriastammtisch-mariadb:${{ github.sha }}
 
       - name: Deploy Nomad job
         shell: bash
