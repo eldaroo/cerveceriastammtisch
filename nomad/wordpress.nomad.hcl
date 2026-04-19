@@ -165,7 +165,7 @@ EOF
         port = "http"
         tags = [
           "traefik.enable=true",
-          "traefik.http.routers.${var.app_name}.rule=Host(`${var.domain}`)",
+          "traefik.http.routers.${var.app_name}.rule=Host(`${var.domain}`) || Host(`www.${var.domain}`)",
           "traefik.http.routers.${var.app_name}.entrypoints=websecure",
           "traefik.http.routers.${var.app_name}.tls.certresolver=le",
         ]
