@@ -116,7 +116,7 @@ job "cerveceria-stammtisch" {
 
       resources {
         cpu    = 500
-        memory = 768
+        memory = 384
       }
 
       service {
@@ -157,7 +157,7 @@ EOF
 
       resources {
         cpu    = 700
-        memory = 768
+        memory = 384
       }
 
       service {
